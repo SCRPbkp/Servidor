@@ -43,6 +43,8 @@
 #define COL_VERDEAQUA 0x408080FF
 #define COL_VERDEPASTEL 0x79FF79FF
 #define COL_CELESTEPASTEL 0x88D9FFFF
+#define COL_AMARILLOVIEJO 0xF5F6CEFF
+#define COL_VERDEOSCURO 0x088A08FF
 //------------Colores Admin ------------//
 
 #define VERDE_ADMIN 0x7CC532FF
@@ -55,7 +57,7 @@
 #define COL_GRIS 0x808080FF
 //---------Mensajes------------//
 #define 			NODUTY        				"* No puedes usar este comando porque no estas en servicio administrativo (/aduty)."
-#define 			NoAutorizado        		SendClientMessage(playerid, COL_CRIMSON,"* No estás autorizado para usar este comando!");
+#define 			NoAutorizado        		SendClientMessage(playerid, COL_CRIMSON,"No estás autorizado para usar este comando!");
 
 #define     SECONDS_TO_LOGIN     30
 
@@ -114,7 +116,7 @@ enum E_JUGADORES
 new pInfo[MAX_PLAYERS][E_JUGADORES];
 new g_MysqlRaceCheck[MAX_PLAYERS];
 new gBcmd[MAX_PLAYERS];
-
+new Nacionalidad[50];
 new BigEar[MAX_PLAYERS];
 enum
 {
@@ -166,7 +168,7 @@ new bool:stopanimAllowed[MAX_PLAYERS];
 
 // -------- Facciones //
 #define MAX_FACTIONS 30
-/*enum faccionesInfo
+enum faccionesInfo
 {
 	fID,
 	fNombre,
@@ -177,18 +179,20 @@ new bool:stopanimAllowed[MAX_PLAYERS];
 	fRango5,
 	fRango6,
 	fRango7,
-	fTipo
-};*/
-//new fInfo[MAX_FACTIONS][faccionesInfo];
+	fTipo,
+	fLider
+};
+new fInfo[MAX_FACTIONS][faccionesInfo];
 new NombreFaccion[128];
 new FaccionTipo;
-new fRango1[30];
-new fRango2[30];
-new fRango3[30];
-new fRango4[30];
-new fRango5[30];
-new fRango6[30];
-new fRango7[30];
+new ftRango1[30];
+new ftRango2[30];
+new ftRango3[30];
+new ftRango4[30];
+new ftRango5[30];
+new ftRango6[30];
+new ftRango7[30];
+new TotalFaccs;
 //====================================================================================================================================================================================//
 
 //                                                                          CALLBACKS
@@ -213,6 +217,7 @@ public OnGameModeInit()
 		return 1;
 	}
 
+	LoadFaccs();
 	print("MySQL connection is successful.");
     ShowPlayerMarkers(false);
     SetTimer("TimerDeUnMinuto",60000,1); //Inicia timer de un minuto
@@ -344,13 +349,9 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 
             // 16 random characters from 33 to 126 (in ASCII) for the salt
             for (new i = 0; i < 16; i++) pInfo[playerid][Salt][i] = random(94) + 33;
-            SHA256_PassHash(inputtext, pInfo[playerid][Salt], pInfo[playerid][Password], 65);
-
-        	new valorDNI = random(999999);
+            SHA256_PassHash(inputtext, pInfo[playerid][Salt], pInfo[playerid][Password], 65);       	
         	
-
-        	pInfo[playerid][pDNI] = valorDNI;
-
+        	
             new str[38+1];
 			format(str, sizeof(str), "%s{FFFFFF}Define el sexo de tu personaje", str);
 			ShowPlayerDialog(playerid, DIALOG_SEXO, DIALOG_STYLE_MSGBOX, "{CC2538}REGISTRO:{FFFFFF}SEXO", str, "Masculino", "Femenino");
@@ -400,14 +401,15 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
             switch(listitem)
                     {
 						case 0:
-                        {
+                        {    
 
-                            new string[24] = "Norteamericano";
-							format(pInfo[playerid][pRaza], sizeof(string), "%s", string);
-		       				GameTextForPlayer(playerid, "~R~Bienvenido a la ciudad del pecado", 1500, 3);
-		       				new query[270];
-				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%s', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
-							pInfo[playerid][pSexo], pInfo[playerid][pEdad], pInfo[playerid][pRaza], pInfo[playerid][pDNI]);
+                        	//"Norteamericano"							
+							pInfo[playerid][pRaza] = 1; 
+							pInfo[playerid][pDNI] = random(999999);                      
+		       				GameTextForPlayer(playerid, "~R~Bienvenido a la ciudad del pecado", 1500, 3);		       						       				    				
+		       				new query[500];
+				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%i', '%i')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
+							pInfo[playerid][pSexo], pInfo[playerid][pEdad], pInfo[playerid][pRaza], pInfo[playerid][pDNI]);							
 				            mysql_tquery(g_SQL, query, "OnPlayerRegister", "d", playerid);
 
 
@@ -415,11 +417,13 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
                         case 1:
                         {
 
-                            new string[24] = "Latino";
-							format(pInfo[playerid][pRaza], sizeof(string), "%s", string);
+                            //"Latino"
+							pInfo[playerid][pRaza] = 2; 
+							pInfo[playerid][pDNI] = random(999999);
 		        			GameTextForPlayer(playerid, "~R~Bienvenido a la ciudad del pecado", 1500, 3);
+		        			
 		        			new query[270];
-				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%s', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
+				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%i', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
 							pInfo[playerid][pSexo], pInfo[playerid][pEdad], pInfo[playerid][pRaza], pInfo[playerid][pDNI]);
 				            mysql_tquery(g_SQL, query, "OnPlayerRegister", "d", playerid);
 
@@ -428,11 +432,12 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
                         case 2:
                         {
 
-                            new string[24] = "Europeo";
-							format(pInfo[playerid][pRaza], sizeof(string), "%s", string);
+                            //"Europeo"
+							pInfo[playerid][pRaza] = 3; 
+							pInfo[playerid][pDNI] = random(999999);
 		        			GameTextForPlayer(playerid, "~R~Bienvenido a la ciudad del pecado", 1500, 3);
 		        			new query[270];
-				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%s', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
+				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%i', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
 							pInfo[playerid][pSexo], pInfo[playerid][pEdad], pInfo[playerid][pRaza], pInfo[playerid][pDNI]);
 				            mysql_tquery(g_SQL, query, "OnPlayerRegister", "d", playerid);
 
@@ -441,11 +446,12 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
                         case 3:
                         {
 
-                            new string[24] = "Afroamericano";
-							format(pInfo[playerid][pRaza], sizeof(string), "%s", string);
+                            //"Afroamericano";
+							pInfo[playerid][pRaza] = 4; 
+							pInfo[playerid][pDNI] = random(999999);
 		        			GameTextForPlayer(playerid, "~R~Bienvenido a la ciudad del pecado", 1500, 3);
 		        			new query[270];
-				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%s', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
+				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%i', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
 							pInfo[playerid][pSexo], pInfo[playerid][pEdad], pInfo[playerid][pRaza], pInfo[playerid][pDNI]);
 				            mysql_tquery(g_SQL, query, "OnPlayerRegister", "d", playerid);
 
@@ -454,11 +460,12 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
                         case 4:
                         {
 
-                            new string[24] = "Asiático";
-							format(pInfo[playerid][pRaza], sizeof(string), "%s", string);
+                            // "Asiático";
+							pInfo[playerid][pRaza] = 5; 
+							pInfo[playerid][pDNI] = random(999999);
 		       				GameTextForPlayer(playerid, "~R~Bienvenido a la ciudad del pecado", 1500, 3);
 		       				new query[270];
-				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%s', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
+				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%i', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
 							pInfo[playerid][pSexo], pInfo[playerid][pEdad], pInfo[playerid][pRaza], pInfo[playerid][pDNI]);
 				            mysql_tquery(g_SQL, query, "OnPlayerRegister", "d", playerid);
 
@@ -467,11 +474,12 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
                         case 5:
                         {
 
-                            new string[24] = "Oriental";
-							format(pInfo[playerid][pRaza], sizeof(string), "%s", string);
+                            //"Oriental"
+							pInfo[playerid][pRaza] = 6; 
+							pInfo[playerid][pDNI] = random(999999);
                             GameTextForPlayer(playerid, "~R~Bienvenido a la ciudad del pecado", 1500, 3);
                             new query[270];
-				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%s', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
+				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%i', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
 							pInfo[playerid][pSexo], pInfo[playerid][pEdad], pInfo[playerid][pRaza], pInfo[playerid][pDNI]);
 				            mysql_tquery(g_SQL, query, "OnPlayerRegister", "d", playerid);
 
@@ -479,11 +487,12 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
                         case 6:
                         {
 
-                            new string[24] = "Árabe";
-							format(pInfo[playerid][pRaza], sizeof(string), "%s", string);
+                            // "Árabe"
+							pInfo[playerid][pRaza] = 7; 
+							pInfo[playerid][pDNI] = random(999999);
 		       				GameTextForPlayer(playerid, "~R~Bienvenido a la ciudad del pecado", 1500, 3);
 		       				new query[270];
-				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%s', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
+				            mysql_format(g_SQL, query, sizeof query, "INSERT INTO `jugadores` (`username`, `password`, `salt`, `pSexo`, `pEdad`, `pRaza`, `pDNI`) VALUES ('%e', '%s', '%e', '%i', '%i', '%i', '%d')", pInfo[playerid][Name], pInfo[playerid][Password], pInfo[playerid][Salt],
 							pInfo[playerid][pSexo], pInfo[playerid][pEdad], pInfo[playerid][pRaza], pInfo[playerid][pDNI]);
 				            mysql_tquery(g_SQL, query, "OnPlayerRegister", "d", playerid);
 
@@ -525,7 +534,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         	if(strlen(inputtext) == 0) return ShowPlayerDialog(playerid, DIALOG_FNOMBRE, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION", "{CC2538}¡ATENCIÓN!\n{FFFFFF} No ingresaste texto","Aceptar","");
 			if(strlen(inputtext) < 60)
 			{
-				format(fRango1, sizeof(fRango1), "%s", inputtext);
+				format(ftRango1, sizeof(ftRango1), "%s", inputtext);
 				new str[37+1];
 				format(str, sizeof(str), "%s{FFFFFF}Ingresá el nombre del Rango 2", str);
 				ShowPlayerDialog(playerid, DIALOG_FRANGO2, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION: {FFFFFF}RANGOS", str, "Aceptar", "Cancelar");
@@ -537,7 +546,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         	if(strlen(inputtext) == 0) return ShowPlayerDialog(playerid, DIALOG_FNOMBRE, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION", "{CC2538}¡ATENCIÓN!\n{FFFFFF} No ingresaste texto","Aceptar","");
 			if(strlen(inputtext) < 60)
 			{
-				format(fRango2, sizeof(fRango2), "%s", inputtext);
+				format(ftRango2, sizeof(ftRango2), "%s", inputtext);
 				new str[37+1];
 				format(str, sizeof(str), "%s{FFFFFF}Ingresá el nombre del Rango 3", str);
 				ShowPlayerDialog(playerid, DIALOG_FRANGO3, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION: {FFFFFF}RANGOS", str, "Aceptar", "Cancelar");
@@ -549,7 +558,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         	if(strlen(inputtext) == 0) return ShowPlayerDialog(playerid, DIALOG_FNOMBRE, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION", "{CC2538}¡ATENCIÓN!\n{FFFFFF} No ingresaste texto","Aceptar","");
 			if(strlen(inputtext) < 60)
 			{
-				format(fRango3, sizeof(fRango3), "%s", inputtext);
+				format(ftRango3, sizeof(ftRango3), "%s", inputtext);
 				new str[37+1];
 				format(str, sizeof(str), "%s{FFFFFF}Ingresá el nombre del Rango 4", str);
 				ShowPlayerDialog(playerid, DIALOG_FRANGO4, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION: {FFFFFF}RANGOS", str, "Aceptar", "Cancelar");
@@ -561,7 +570,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         	if(strlen(inputtext) == 0) return ShowPlayerDialog(playerid, DIALOG_FNOMBRE, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION", "{CC2538}¡ATENCIÓN!\n{FFFFFF} No ingresaste texto","Aceptar","");
 			if(strlen(inputtext) < 60)
 			{
-				format(fRango4, sizeof(fRango4), "%s", inputtext);
+				format(ftRango4, sizeof(ftRango4), "%s", inputtext);
 				new str[37+1];
 				format(str, sizeof(str), "%s{FFFFFF}Ingresá el nombre del Rango 5", str);
 				ShowPlayerDialog(playerid, DIALOG_FRANGO5, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION: {FFFFFF}RANGOS", str, "Aceptar", "Cancelar");
@@ -573,7 +582,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         	if(strlen(inputtext) == 0) return ShowPlayerDialog(playerid, DIALOG_FNOMBRE, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION", "{CC2538}¡ATENCIÓN!\n{FFFFFF} No ingresaste texto","Aceptar","");
 			if(strlen(inputtext) < 60)
 			{
-				format(fRango5, sizeof(fRango5), "%s", inputtext);
+				format(ftRango5, sizeof(ftRango5), "%s", inputtext);
 				new str[37+1];
 				format(str, sizeof(str), "%s{FFFFFF}Ingresá el nombre del Rango 6", str);
 				ShowPlayerDialog(playerid, DIALOG_FRANGO6, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION: {FFFFFF}RANGOS", str, "Aceptar", "Cancelar");
@@ -585,7 +594,7 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         	if(strlen(inputtext) == 0) return ShowPlayerDialog(playerid, DIALOG_FNOMBRE, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION", "{CC2538}¡ATENCIÓN!\n{FFFFFF} No ingresaste texto","Aceptar","");
 			if(strlen(inputtext) < 60)
 			{
-				format(fRango6, sizeof(fRango6), "%s", inputtext);
+				format(ftRango6, sizeof(ftRango6), "%s", inputtext);
 				new str[37+1];
 				format(str, sizeof(str), "%s{FFFFFF}Ingresá el nombre del Rango 7", str);
 				ShowPlayerDialog(playerid, DIALOG_FRANGO7, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION: {FFFFFF}RANGOS", str, "Aceptar", "Cancelar");
@@ -597,10 +606,10 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
         	if(strlen(inputtext) == 0) return ShowPlayerDialog(playerid, DIALOG_FNOMBRE, DIALOG_STYLE_INPUT, "{CC2538}CREAR FACCION", "{CC2538}¡ATENCIÓN!\n{FFFFFF} No ingresaste texto","Aceptar","");
 			if(strlen(inputtext) < 60)
 			{
-				format(fRango7, sizeof(fRango7), "%s", inputtext);
+				format(ftRango7, sizeof(ftRango7), "%s", inputtext);
                 new query[270];
 				mysql_format(g_SQL, query, sizeof query, "INSERT INTO `facciones` (`fNombre`, `fTipo`, `fRango1`, `fRango2`, `fRango3`, `fRango4`, `fRango5`, `fRango6`, `fRango7`) VALUES ('%s', '%d', '%s', '%e', '%e', '%e', '%e', '%e', '%e')",
-				NombreFaccion, FaccionTipo, fRango1, fRango2, fRango3, fRango4, fRango5, fRango6, fRango7);
+				NombreFaccion, FaccionTipo, ftRango1, ftRango2, ftRango3, ftRango4, ftRango5, ftRango6, ftRango7);
 	            mysql_tquery(g_SQL, query);
 	            new str[92+1];
 				format(str, sizeof(str), "%s{FFFFFF}La facción fue creada correctamente. Para verificar, usar el comando /listafacciones", str);
@@ -638,12 +647,12 @@ public OnPlayerRegister(playerid)
     pInfo[playerid][pNivel] = 1;
     pInfo[playerid][pExp] = 0;
     SetSpawnInfo(playerid, NO_TEAM, 0, pInfo[playerid][X_Pos], pInfo[playerid][Y_Pos], pInfo[playerid][Z_Pos], pInfo[playerid][A_Pos], 0, 0, 0, 0, 0, 0);
-	pInfo[playerid][IsLoggedIn] = true;
+	pInfo[playerid][IsLoggedIn] = true;	
+	pInfo[playerid][pFaccion] = 0;
+	pInfo[playerid][pRango] = 0;
 	pInfo[playerid][isAlive] = true;
+			
 	SpawnPlayer(playerid);
-
-
-
 	return 1;
 
 }
@@ -728,6 +737,38 @@ public OnPlayerSpawn(playerid)
 	        new string[24];
 	        format(pInfo[playerid][pAdminLvl], sizeof(string), "Dueño", string);
 	    }
+	}
+
+	switch(pInfo[playerid][pRaza])
+	{
+		case 1:
+		{
+			format(Nacionalidad, sizeof(Nacionalidad), "Norteamericano", Nacionalidad);
+		}
+		case 2:
+		{
+			format(Nacionalidad, sizeof(Nacionalidad), "Latino", Nacionalidad);
+		}
+		case 3:
+		{
+			format(Nacionalidad, sizeof(Nacionalidad), "Europeo", Nacionalidad);
+		}
+		case 4:
+		{
+			format(Nacionalidad, sizeof(Nacionalidad), "Afroamericano", Nacionalidad);
+		}
+		case 5:
+		{
+			format(Nacionalidad, sizeof(Nacionalidad), "Asiatico", Nacionalidad);
+		}
+		case 6:
+		{
+			format(Nacionalidad, sizeof(Nacionalidad), "Oriental", Nacionalidad);
+		}
+		case 7:
+		{
+			format(Nacionalidad, sizeof(Nacionalidad), "Arabe", Nacionalidad);
+		}
 	}
 
 
@@ -886,6 +927,7 @@ public TimerDeUnMinuto()
 
 AssignPlayerData(playerid)
 {
+	
     cache_get_value_int(0, "id", pInfo[playerid][ID]);
     cache_get_value_float(0, "PosX", pInfo[playerid][X_Pos]);
     cache_get_value_float(0, "PosY", pInfo[playerid][Y_Pos]);
@@ -904,11 +946,57 @@ AssignPlayerData(playerid)
     cache_get_value_int(0, "pSexo", pInfo[playerid][pSexo]);
     cache_get_value_int(0, "pEdad", pInfo[playerid][pEdad]);
     cache_get_value_bool(0, "isAlive", pInfo[playerid][isAlive]);
-    cache_get_value_name(0, "pRaza", pInfo[playerid][pRaza]);
+    cache_get_value_int(0, "pRaza", pInfo[playerid][pRaza]);    
     cache_get_value_int(0, "pFaccion", pInfo[playerid][pFaccion]);
     cache_get_value_int(0, "pRango", pInfo[playerid][pRango]);
     cache_get_value_int(0, "pDNI", pInfo[playerid][pDNI]);
+    
     return 1;
+}
+
+LoadFaccs()
+{
+	new sql[80], query[50];
+	format(sql, sizeof(sql), "SELECT * FROM `facciones` WHERE `borradoLogico` = 0");
+	mysql_query(g_SQL, sql);
+	new rows;
+	cache_get_row_count(rows);
+	for(new i = 0, j = rows; i < j; i++){		
+		cache_get_value_name(i, "fNombre", query);
+		format(fInfo[i][fNombre], 60, "%s", query);
+		cache_get_value_name(i, "fRango1", query);
+		format(fInfo[i][fRango1], 30, "%s", query);
+		cache_get_value_name(i, "fRango2", query);
+		format(fInfo[i][fRango2], 30, "%s", query);
+		cache_get_value_name(i, "fRango3", query);
+		format(fInfo[i][fRango3], 30, "%s", query);
+		cache_get_value_name(i, "fRango4", query);
+		format(fInfo[i][fRango4], 30, "%s", query);
+		cache_get_value_name(i, "fRango5", query);
+		format(fInfo[i][fRango5], 30, "%s", query);
+		cache_get_value_name(i, "fRango6", query);
+		format(fInfo[i][fRango6], 30, "%s", query);
+		cache_get_value_name(i, "fRango7", query);
+		format(fInfo[i][fRango7], 30, "%s", query);
+		cache_get_value_int(i, "fID", fInfo[i][fID]);
+		cache_get_value_name(i, "fLider", query);
+		format(fInfo[i][fLider], 64, "%s", query);
+		if(TotalFaccs < i) TotalFaccs = i;
+	}
+	printf("Facciones cargadas: %d (MAX: %d)", TotalFaccs, MAX_FACTIONS);
+}
+
+SaveFaccs(faccid)
+{
+	new query[500];
+	format(query, sizeof(query), "UPDATE facciones SET `fRango1` = '%s', `fRango2` = '%s', `fRango3` = '%s', `fRango4` = '%s', `fRango5` = '%s', `fRango6` = '%s', `fRango7` = '%s' WHERE `fID` = '%i'",
+	fInfo[faccid][fRango1], fInfo[faccid][fRango2], fInfo[faccid][fRango3], fInfo[faccid][fRango4], fInfo[faccid][fRango5], fInfo[faccid][fRango6], fInfo[faccid][fRango7], fInfo[faccid][fLider], fInfo[faccid][fID]);
+	mysql_query(g_SQL, query);	
+
+	
+	format(query, sizeof(query), "UPDATE facciones SET `fLider` = '%s' WHERE `fID` = '%i'",
+	fInfo[faccid][fLider], fInfo[faccid][fID]);
+	mysql_query(g_SQL, query);
 }
 
 DelayedKick(playerid, time = 500)
@@ -920,24 +1008,18 @@ DelayedKick(playerid, time = 500)
 
 UpdatePlayerData(playerid)
 {
-
 	GetPlayerPos(playerid, pInfo[playerid][X_Pos], pInfo[playerid][Y_Pos], pInfo[playerid][Z_Pos]);
 	GetPlayerFacingAngle(playerid, pInfo[playerid][A_Pos]);
 	GetPlayerHealth(playerid, pInfo[playerid][pSalud]);
 	GetPlayerArmour(playerid, pInfo[playerid][pChaleco]);
 	GetPlayerMoney(playerid);
 	GetPlayerSkin(playerid);
-
 	new query[1024];
-	mysql_format(g_SQL, query, sizeof query, "UPDATE `jugadores` SET `PosX` = %f, `PosY` = %f, `PosZ` = %f, `PosA` = %f, `interior` = %d, `pSalud` = %f, `pChaleco` = %f, `isAlive` = %i, `pDinero` = %d, `pSkin` = %d, `pNivel` = %d, `pExp` = %d, `pPrimerLog` = %d, `pFaccion` = %i, `pRango` = %i WHERE `id` = %d",
+	mysql_format(g_SQL, query, sizeof query, "UPDATE `jugadores` SET `PosX` = '%f', `PosY` = '%f', `PosZ` = '%f', `PosA` = '%f', `interior` = '%d', `pSalud` = '%f', `pChaleco` = '%f', `isAlive` = '%d', `pDinero` = '%d', `pSkin` = '%d', `pNivel` = '%d', `pExp` = '%d', `pPrimerLog` = '%d', `pFaccion` = '%d', `pRango` = '%d' WHERE `id` = '%d'",
 	pInfo[playerid][X_Pos], pInfo[playerid][Y_Pos], pInfo[playerid][Z_Pos], pInfo[playerid][A_Pos], GetPlayerInterior(playerid),
 	pInfo[playerid][pSalud], pInfo[playerid][pChaleco], pInfo[playerid][isAlive], GetPlayerMoney(playerid), GetPlayerSkin(playerid), pInfo[playerid][pNivel], pInfo[playerid][pExp], 
 	pInfo[playerid][pPrimerLog], pInfo[playerid][pFaccion], pInfo[playerid][pRango], pInfo[playerid][ID]);
 	mysql_tquery(g_SQL, query);
-
-
-
-
     return 1;
 
 }
@@ -1120,6 +1202,20 @@ stock ProxDetectorEx(Float:radi, playerid, string[], color)
 	return 1;
 }
 
+ ProxDetectorS(Float:radi, playerid, targetid)
+{
+    if(IsPlayerConnected(playerid)&&IsPlayerConnected(targetid))
+	{
+		new Float:posx, Float:posy, Float:posz;
+		GetPlayerPos(playerid, posx, posy, posz);
+		if(IsPlayerInRangeOfPoint(targetid, radi, posx, posy, posz))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
 ProxDetectorBcmd(Float:radi, playerid, string[],col1,col2,col3,col4,col5)
 {
 	new Float:posx, Float:posy, Float:posz;
@@ -1224,12 +1320,45 @@ pInfo[playerid][Interior] = worldid;
 stock PreloadAnimLib(playerid, animlib[]) ApplyAnimation(playerid,animlib,"null",0.0,0,0,0,0,0);
 
 
+
+forward MostrarDNI(playerid,targetid);
+public MostrarDNI(playerid,targetid)
+{
+    if(IsPlayerConnected(playerid)&&IsPlayerConnected(targetid))
+	{
+	    new string[50], sex[20];
+	    if(pInfo[playerid][pSexo] == 1) { sex = "Masculino"; }
+   		else								{ sex = "Femenino"; }
+   		//new raza[24], sql[70];
+		//format(sql, sizeof(sql), "SELECT pRaza FROM `jugadores` WHERE `ID` = %i", pInfo[playerid][ID]);
+		//mysql_query(g_SQL, sql);
+	    //cache_get_value_name(0, "pRaza", raza);
+	    //format(pInfo[playerid][pRaza], sizeof(raza), "%s", raza);
+	    SendClientMessage(targetid, COL_VERDEOSCURO, "|___________ Documento Nacional de Identidad de Los Santos ___________|");
+   		format(string, sizeof(string), "   Nombre: %s", NombreJugador(playerid));
+   		SendClientMessage(targetid, COL_AMARILLOVIEJO, string);
+   		format(string, sizeof(string), "   Sexo: %s",  sex);
+   		SendClientMessage(targetid, COL_AMARILLOVIEJO, string);
+   		format(string, sizeof(string), "   Edad: %d", pInfo[playerid][pEdad]);
+   		SendClientMessage(targetid, COL_AMARILLOVIEJO, string);
+   		/*if(PlayerInfo[playerid][pMarried] == 1) format(string, sizeof(string), "   Estado Civil: Casado			Con: %s", PlayerInfo[playerid][pMarriedTo]);
+		else format(string, sizeof(string), "   Estado Civil: Soltero");*/
+   		//Message(targetid, COLOR_WHITE, string);
+   		format(string, sizeof(string), "   Nº DNI: %i", pInfo[playerid][pDNI]);
+   		SendClientMessage(targetid, COL_AMARILLOVIEJO, string);
+   		SendClientMessage(targetid, COL_VERDEOSCURO, "|_____________________________________________________________________|");
+	}
+	return 1;
+}
+
+
+
+
 //====================================================================================================================================================================================//
 
 //                                                                          C  O  M  A  N  D  O  S
 
 //====================================================================================================================================================================================//
-
 //------------- CHAT
 
 CMD:me(playerid, params[])
@@ -1301,6 +1430,13 @@ CMD:b(playerid, params[])
         return 1;
     }
 
+
+
+
+
+
+//------------- Administrativo
+
 CMD:j(playerid, params[])
 {
 
@@ -1312,11 +1448,6 @@ CMD:j(playerid, params[])
 	ProxDetectorEx(60.0, playerid, string, GetPlayerColor(playerid));
 	return 1;
 }
-
-
-
-
-//------------- Administrativo
 
 CMD:setadmin(playerid, params[])
 {
@@ -1684,7 +1815,7 @@ CMD:specoff(playerid, params[])
 		SetPlayerVirtualWorld(playerid, pInfo[playerid][pVirtualWorld]);
 		return 1;
 	}
-	else SendClientMessage(playerid, -1, "* No estás spectando a nadie.");
+	else SendClientMessage(playerid, -1, "No estás spectando a nadie.");
 	return 0;
 }
 
@@ -1737,6 +1868,90 @@ CMD:crearfacc(playerid, params[])
         return 1;
 }
 
+CMD:hacerlider(playerid, params[])
+{
+		new string[128];		
+        if(pInfo[playerid][pAdmin] < 6 && pInfo[playerid][pFaccion] == 0) 	return NoAutorizado
+		if(sscanf(params, "ui", params[0], params[1])) 		return SendClientMessage(playerid, COLOR_GRAD2, "Uso: /hacerlider [ID] [ID Facción]");
+  		if(params[1] == 0) 		return SendClientMessage(playerid, COLOR_FADE, "ID facción incorrecto.");
+    	if(!IsPlayerConnected(params[0])) {
+    		SendClientMessage(playerid, COLOR_FADE, "Jugador desconectado.");
+    	}
+    	if (pInfo[params[0]][pFaccion] == params[1]) {
+    		SendClientMessage(playerid, COLOR_FADE, "El jugador ya es líder de la facción.");
+    	}
+    	else {
+    		if (pInfo[params[0]][pFaccion] >= 1) {
+				pInfo[playerid][pFaccion] = params[1];
+				pInfo[playerid][pRango] = 7;
+				new faccid = params[1];	
+				fInfo[faccid][fID] = faccid;			
+				format(fInfo[faccid][fLider], 64, "%s", NombreJugador(params[0]));				
+				format(szMessage, sizeof(szMessage), "{CC2538}AdmCmdExe:{FFFFFF} %s hizo lider de facción a %s.", NombreJugador(playerid), NombreJugador(params[0]));
+				ABroadCast(-1, szMessage, 5);
+				format(string, sizeof(string), "El admin %s te hizo lider de la facción.", NombreJugador(playerid));
+	            SendClientMessage(params[0], -1, string);
+	            format(string, sizeof(string), "Hiciste líder a %s.", NombreJugador(params[0]));
+	            SendClientMessage(playerid, -1, string);
+	            SaveFaccs(faccid);
+            }
+
+            else {
+				SendClientMessage(playerid, COLOR_FADE, "El jugador ya tiene facción, despedilo (/despedirlider) antes de hacerlo lider.");            	
+            }
+    	}
+        return 1;
+}
+
+CMD:despedirlider(playerid, params[])
+{
+	new string[128];
+	if(pInfo[playerid][pAdmin] < 6 && pInfo[playerid][pFaccion] == 0) 	return NoAutorizado
+	if(sscanf(params, "ui", params[0], params[1])) 		return SendClientMessage(playerid, COLOR_GRAD2, "Uso: /despedirlider [ID] [ID Facción]");
+	if(params[1] == 0) 		return SendClientMessage(playerid, COLOR_FADE, "ID facción incorrecto.");
+    if(!IsPlayerConnected(params[0])) {SendClientMessage(playerid, COLOR_FADE, "Jugador desconectado.");}	
+    else {
+    	if (pInfo[params[0]][pFaccion] == params[1] || pInfo[params[0]][pRango] == 7) {
+    		pInfo[playerid][pFaccion] = 0;
+			pInfo[playerid][pRango] = 0;
+			new faccid = params[1];	
+			fInfo[faccid][fID] = faccid;			
+			format(fInfo[faccid][fLider], 64, "Vacio");				
+			format(szMessage, sizeof(szMessage), "{CC2538}AdmCmdExe:{FFFFFF} %s despidió de lider de facción a %s.", NombreJugador(playerid), NombreJugador(params[0]));
+			ABroadCast(-1, szMessage, 5);
+			format(string, sizeof(string), "El admin %s te despidió de lider de la facción.", NombreJugador(playerid));
+            SendClientMessage(params[0], -1, string);
+            format(string, sizeof(string), "Despediste de líder a %s.", NombreJugador(params[0]));
+            SendClientMessage(playerid, -1, string);
+            SaveFaccs(faccid);
+    		}
+
+    		else {
+    			SendClientMessage(playerid, COLOR_FADE, "Este jugador no es líder.");
+    		}
+    }
+    return 1;
+}
+
+
+CMD:listafacciones(playerid, params[])
+{
+    if(!AdminOnDuty(playerid) && pInfo[playerid][pAdmin] >= 6) return SendClientMessage(playerid, -1, NODUTY);
+	SendClientMessage(playerid, ORANGE_ADMIN, "Facciones en la base de datos:");
+    new sql[80], query[50], string[150];
+	format(sql, sizeof(sql), "SELECT * FROM `facciones` WHERE `borradoLogico` = 0");
+	mysql_query(g_SQL, sql);
+	new rows;
+	cache_get_row_count(rows);
+	for(new i = 0, j = rows; i < j; i++){		
+		cache_get_value_name(i, "fNombre", query);
+		format(fInfo[i][fNombre], 60, "%s", query);
+		cache_get_value_int(i, "fID", fInfo[i][fID]);
+		format(string, sizeof(string), "ID %i: %s", fInfo[i][fID], fInfo[i][fNombre]);
+        SendClientMessage(playerid, ORANGE_ADMIN, string);
+	}
+    return 1;
+}
 //------ Comandos generales
 
 CMD:aceptarmuerte(playerid, params[])
@@ -1753,12 +1968,85 @@ CMD:aceptarmuerte(playerid, params[])
   	return 1;
 }
 
-CMD:settime(playerid, params[])
+CMD:cuenta(playerid, params[])
 {
-    new id, time, time2;
-    if(sscanf(params, "uii", id, time,time2)) return SendClientMessage(playerid, -1, "Usage: /settime <ID/Part Of Name> <0-24>");
-    if(time > 24 || time < 0) return SendClientMessage(playerid, -1, "Available Hours: 0-24");
-    SetPlayerTime(id,time, time2);
-    return 1;
+	new faccion[120], rango[120];
+	//Facción
+	if(pInfo[playerid][pFaccion] == 0){
+		format(faccion, 120, "Sin facción");
+		format(rango, 120, "Sin rango", rango);	
+	}
+	if(pInfo[playerid][pFaccion] > 1)
+	{
+		format(faccion, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fNombre]);
+	}
+	if(pInfo[playerid][pFaccion] > 1) //Parte de una facción
+		{
+	        switch(pInfo[playerid][pRango])
+		    {
+	            case 1: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango1]);
+	            case 2: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango2]);
+	            case 3: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango3]);
+	            case 4: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango4]);
+	            case 5: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango5]);
+	            case 6: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango6]);
+	            case 7: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango7]);
+	        }
+		}
+	new str[200], str2[200];
+	SendClientMessage(playerid, -1, "{AF1F30}|____________________INFORMACIÓN DE CUENTA____________________|");
+	format(str, sizeof(str), "{D6D5C9}    ID: %i   |   Nivel: %i   |   Experiencia: %i    |   Raza: %s", pInfo[playerid][ID], pInfo[playerid][pNivel], pInfo[playerid][pExp], Nacionalidad);
+	SendClientMessage(playerid, -1, str);
+	format(str2, sizeof(str2), "{D6D5C9}    Skin activo: %i   |   Facción: %s   |   Rango: %s", pInfo[playerid][pSkin], faccion, rango);
+	SendClientMessage(playerid, -1, str2);
+	SendClientMessage(playerid, -1, "{AF1F30}|________________________________________________________________|");
+	return 1;
 }
+
+CMD:cuenta2(playerid, params[])
+{
+	new faccion[120], rango[120];
+	//Facción
+	if(pInfo[playerid][pFaccion] == 0){
+		format(faccion, 120, "Sin facción");
+		format(rango, 120, "Sin rango", rango);	
+	}
+	if(pInfo[playerid][pFaccion] > 1)
+	{
+		format(faccion, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fNombre]);
+	}
+	if(pInfo[playerid][pFaccion] > 1) //Parte de una facción
+		{
+	        switch(pInfo[playerid][pRango])
+		    {
+	            case 1: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango1]);
+	            case 2: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango2]);
+	            case 3: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango3]);
+	            case 4: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango4]);
+	            case 5: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango5]);
+	            case 6: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango6]);
+	            case 7: format(rango, 120, "%s", fInfo[pInfo[playerid][pFaccion]][fRango7]);
+	        }
+		}
+	new str[500+1];
+	format(str, sizeof(str), "{C6D8D3}Información general:\n{FFFFFF}- ID: {CC2538}%i\n{FFFFFF}- Nivel: {CC2538}%i\n{FFFFFF}- Experiencia: {CC2538}%i\n{FFFFF", pInfo[playerid][ID], pInfo[playerid][pNivel], pInfo[playerid][pExp]);
+	format(str, sizeof(str), "%sF}- Skin: {CC2538}%i\n{FFFFFF}- Raza: {CC2538}%s\n{FFFFFF}- Facción: {CC2538}%s\n{FFFFFF}- Rango: {CC2538}%s{FFFFFF}", str, pInfo[playerid][pSkin], Nacionalidad, faccion, rango);
+	ShowPlayerDialog(playerid, 591, DIALOG_STYLE_MSGBOX, "{CC2538}INFORMACIÓN DE CUENTA", str, "Cerrar", "");
+	return 1;
+}
+
+CMD:dni (playerid, params[])
+    {
+        if(sscanf(params, "u", params[0])) return SendClientMessage(playerid, COLOR_GRAD2, "Utilize: /dni <PlayerID>");
+        if(!IsPlayerConnected(params[0])) return SendClientMessage(playerid, COLOR_GRAD2, "Jugador muy lejos.");
+        if(ProxDetectorS(8.0, playerid, params[0]))
+        {
+	        new string[90];
+	        MostrarDNI(playerid, params[0]);
+	        new target = params[0];
+	        format(string, sizeof(string), "* %s le muestra su DNI a %s.", NombreJugador(playerid), NombreJugador(target));
+			ProxDetectorEx(30.0, playerid, string, COL_PURPURA);
+		} else SendClientMessage(playerid, COLOR_FADE, "Jugador muy lejos.");
+		return 1;
+    }
 
